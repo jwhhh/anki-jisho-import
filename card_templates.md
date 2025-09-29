@@ -1,13 +1,20 @@
 # Sample Anki Note Template for Jisho Import Add-on
 
-This file contains sample HTML templates for your Anki cards that work well with the Jisho Import add-on.
+This file contains sample HTML templates for your Anki cards that work well with the Jisho Import add-on, including audio support.
 
 ## Sample Card Templates
 
-### Front Template (Question Side)
-```html
+### Front Template (Question Side3. **Audio Sources:**
+   - 🥇 **Jisho.org audio** (extracted directly from their site)`html
 <div class="card">
     <div class="japanese-word">{{Japanese}}</div>
+    
+    {{#Audio}}
+    <div class="audio-controls">
+        {{Audio}}
+    </div>
+    {{/Audio}}
+    
     <div class="metadata">
         {{#JLPT}}<span class="jlpt">{{JLPT}}</span>{{/JLPT}}
         {{#Common}}<span class="common">Common: {{Common}}</span>{{/Common}}
@@ -19,6 +26,12 @@ This file contains sample HTML templates for your Anki cards that work well with
 ```html
 <div class="card">
     <div class="japanese-word">{{Japanese}}</div>
+    
+    {{#Audio}}
+    <div class="audio-controls">
+        {{Audio}}
+    </div>
+    {{/Audio}}
     
     {{#Reading}}
     <div class="reading">{{Reading}}</div>
@@ -58,6 +71,45 @@ This file contains sample HTML templates for your Anki cards that work well with
     color: #2c3e50;
     margin-bottom: 10px;
     line-height: 1.2;
+}
+
+.audio-controls {
+    margin: 15px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Style Anki's native audio controls */
+.audio-controls a {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    background: #3498db !important;
+    border: 2px solid #2980b9 !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.audio-controls a:hover {
+    background: #2980b9 !important;
+    transform: scale(1.05) !important;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15) !important;
+}
+
+.audio-controls a:active {
+    transform: scale(0.95) !important;
+}
+
+/* Hide the text and style the icon */
+.audio-controls a span {
+    font-size: 14px !important;
+    color: white !important;
+    font-weight: bold !important;
 }
 
 .reading {
@@ -124,6 +176,16 @@ This file contains sample HTML templates for your Anki cards that work well with
     .meaning {
         font-size: 1.1em;
     }
+    
+    /* Make native audio button even smaller on mobile */
+    .audio-controls a {
+        width: 28px !important;
+        height: 28px !important;
+    }
+    
+    .audio-controls a span {
+        font-size: 12px !important;
+    }
 }
 ```
 
@@ -161,9 +223,39 @@ Make sure your note type includes these fields:
 - `Japanese` - Main Japanese word
 - `Reading` - Kana reading
 - `Meaning` - English definitions
+- `Audio` - Audio pronunciation (NEW!)
 - `JLPT` - JLPT level (optional)
 - `PartOfSpeech` - Grammar info (optional)
 - `Common` - Frequency indicator (optional)
+
+### Setting Up Audio Field
+The addon now automatically downloads audio files from Jisho.org! To enable this:
+
+1. **Add an Audio field** to your note type:
+   - Go to **Tools > Manage Note Types**
+   - Select your note type and click **"Fields..."**
+   - Click **"Add"** and name it `Audio`
+   - Click **"Save"**
+
+2. **Audio will be automatically filled** when you use the addon:
+   - The addon will extract audio directly from Jisho.org
+   - Audio files are downloaded and stored in your Anki media folder
+   - The Audio field will contain the Anki audio tag: `[sound:filename.mp3]`
+
+3. **Audio Sources** (in order of preference):
+   - 🥇 **Jisho.org audio** (extracted directly from their site)
+   - 🥈 **Forvo audio** (if you provide API key in config.json)
+   -  **Google TTS** (fallback if enabled)
+
+### Audio Configuration
+You can customize audio settings in `config.json`:
+```json
+{
+    "audio_settings": {
+        "enabled": true
+    }
+}
+```
 
 ## Customization Tips
 
@@ -230,6 +322,12 @@ Perfect for testing recall from meaning to Japanese word and reading.
     
     <div class="answer-section">
         <div class="japanese-word">{{Japanese}}</div>
+        
+        {{#Audio}}
+        <div class="audio-controls">
+            {{Audio}}
+        </div>
+        {{/Audio}}
         
         {{#Reading}}
         <div class="reading">{{Reading}}</div>

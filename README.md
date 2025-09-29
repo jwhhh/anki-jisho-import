@@ -12,6 +12,7 @@ An Anki add-on that automatically fills Japanese word information using the Jish
 
 - 🔍 **Automatic word lookup** using Jisho.org API
 - 📚 **Multiple data fields**: Kanji, readings, English meanings, JLPT levels, parts of speech
+- 🎵 **Audio pronunciation**: Automatically downloads audio from Jisho.org (NEW!)
 - ⌨️ **Keyboard shortcuts**: Ctrl+J to open the search dialog
 - 🎯 **Smart field mapping**: Automatically maps data to your note fields
 
@@ -62,6 +63,7 @@ For the add-on to work properly, your note type should have the following fields
 - **Japanese** - For the main Japanese word (kanji/kana)
 - **Reading** - For the hiragana/katakana reading
 - **Meaning** - For English definitions
+- **Audio** - For pronunciation audio (NEW!)
 
 ### Optional Fields
 - **JLPT** - For JLPT level information
@@ -82,6 +84,7 @@ For the add-on to work properly, your note type should have the following fields
 - **Japanese**: `猫` (corrected to kanji)
 - **Reading**: `ねこ`
 - **Meaning**: `cat (esp. the domestic cat, Felis catus); shamisen; geisha`
+- **Audio**: `[sound:jisho_猫_6b96f918.mp3]` (downloaded automatically)
 - **JLPT**: `jlpt-n5`
 - **PartOfSpeech**: `Noun`
 - **Common**: `Yes`
@@ -92,6 +95,7 @@ For the add-on to work properly, your note type should have the following fields
 - **Japanese**: `食べる` (unchanged - already correct)
 - **Reading**: `たべる`
 - **Meaning**: `to eat; to live on (e.g. a salary); to live off; to subsist on`
+- **Audio**: `[sound:jisho_食べる_c8bb8e5f.mp3]` (downloaded automatically)
 - **JLPT**: `jlpt-n5`
 - **PartOfSpeech**: `Ichidan verb, Transitive verb`
 - **Common**: `Yes`
@@ -102,14 +106,31 @@ For the add-on to work properly, your note type should have the following fields
 - **Japanese**: `有り難う` (converted from romaji)
 - **Reading**: `ありがとう`
 - **Meaning**: `thank you; thanks`
+- **Audio**: Not available for this word
 - **JLPT**: `jlpt-n3`
 
 ## Configuration
 
-You can customize the keyboard shortcut by editing the `config.json` file:
+You can customize the addon by editing the `config.json` file:
 
+### Basic Settings
 ```json
 {
     "keyboard_shortcut": "Ctrl+J"
 }
 ```
+
+### Audio Settings (NEW!)
+```json
+{
+    "audio_settings": {
+        "enabled": true
+    }
+}
+```
+
+**Audio Options:**
+- `enabled`: Enable/disable audio downloading
+
+**Audio Sources:**
+1. 🥇 **Jisho.org** - Native audio directly from Jisho

@@ -1,12 +1,13 @@
 import json
 import requests
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from aqt import mw, gui_hooks
 from aqt.qt import *
 from aqt.utils import showInfo, showCritical, tooltip
 from anki.hooks import addHook
 import re
 import os
+import hashlib
 from .jisho_parser import parse_jisho_result
 
 
@@ -35,9 +36,13 @@ class JishoImporter:
                 "Meaning": "meanings", 
                 "JLPT": "jlpt",
                 "PartOfSpeech": "pos",
-                "Common": "common"
+                "Common": "common",
+                "Audio": "audio"
             },
-            "keyboard_shortcut": "Ctrl+J"
+            "keyboard_shortcut": "Ctrl+J",
+            "audio_settings": {
+                "enabled": True
+            }
         }
         
     def search_word(self, word):
@@ -60,7 +65,13 @@ class JishoImporter:
                 
             # Get the first result (most relevant)
             result = data['data'][0]
-            return parse_jisho_result(result)
+            parsed_data = parse_jisho_result(result)
+            
+            # Add audio if enabled
+            if self.config.get("audio_settings", {}).get("enabled", True):
+                parsed_data['audio'] = self.get_audio_for_word(parsed_data.get('kanji', ''), parsed_data.get('reading', ''))
+            
+            return parsed_data
             
         except requests.RequestException as e:
             showCritical(f"Network error: {str(e)}")
@@ -69,11 +80,78 @@ class JishoImporter:
             showCritical(f"Error searching word: {str(e)}")
             return None
     
-    def get_audio_url(self, word):
-        """Generate audio URL for Japanese word"""
-        # Using Forvo or similar service would be ideal, but for now we'll use a simple approach
-        # You might want to integrate with a TTS service or Forvo API
-        return f"https://www.gstatic.com/hostedimg/382a91be5ab2a4e8_large"  # Placeholder
+    def get_audio_for_word(self, kanji, reading):
+        """Get audio file for Japanese word from Jisho.org"""
+        audio_settings = self.config.get("audio_settings", {})
+        
+        if not audio_settings.get("enabled", True):
+            return ""
+        
+        # Use Jisho.org as the primary (and only) audio source
+        try:
+            return self._get_jisho_audio(kanji, reading) or ""
+        except Exception as e:
+            print(f"Audio source failed: {e}")
+            return ""
+    
+    def _get_jisho_audio(self, kanji, reading):
+        """Get audio directly from Jisho.org by scraping the page"""
+        try:
+            # Use the word (prefer kanji, fallback to reading)
+            word = kanji if kanji else reading
+            if not word:
+                return None
+            
+            # Request the Jisho.org search page
+            url = f"https://jisho.org/search/{quote(word)}"
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            html_content = response.text
+            
+            # Look for audio URLs in the HTML
+            # Pattern: //d1vjc5dkcd3yh2.cloudfront.net/audio/[hash].mp3
+            audio_pattern = r'//d1vjc5dkcd3yh2\.cloudfront\.net/audio/([a-f0-9]{32})\.mp3'
+            matches = re.findall(audio_pattern, html_content)
+            
+            if matches:
+                # Use the first audio file found
+                audio_hash = matches[0]
+                audio_url = f"https://d1vjc5dkcd3yh2.cloudfront.net/audio/{audio_hash}.mp3"
+                return self._download_and_save_audio(audio_url, f"jisho_{word}")
+            
+            print(f"No audio found on Jisho.org for word: {word}")
+            return None
+            
+        except Exception as e:
+            print(f"Jisho.org audio failed: {e}")
+            return None
+    
+    def _download_and_save_audio(self, audio_url, prefix):
+        """Download audio file and save it using Anki's native media manager"""
+        try:
+            # Download the audio file
+            response = requests.get(audio_url, timeout=15)
+            response.raise_for_status()
+            
+            # Generate safe filename
+            safe_prefix = re.sub(r'[^\w\-_]', '_', prefix)
+            filename = f"{safe_prefix}_{hashlib.md5(audio_url.encode()).hexdigest()[:8]}.mp3"
+            
+            # Use Anki's media manager to add the file
+            media_manager = mw.col.media
+            final_filename = media_manager.write_data(filename, response.content)
+            
+            # Return Anki audio tag with the actual filename used
+            return f"[sound:{final_filename}]"
+            
+        except Exception as e:
+            print(f"Failed to download and save audio: {e}")
+            return None
 
 
 class JishoDialog(QDialog):
@@ -159,6 +237,7 @@ Meanings: {data.get('meanings', 'N/A')}
 Parts of Speech: {data.get('pos', 'N/A')}
 JLPT Level: {data.get('jlpt', 'N/A')}
 Common: {data.get('common', 'N/A')}
+Audio: {'Available' if data.get('audio') else 'Not found'}
 """
         self.result_area.setPlainText(result_text)
     
@@ -204,7 +283,8 @@ Common: {data.get('common', 'N/A')}
                     'meaning': ['meaning', 'definition', 'english', 'translation', 'definitions'],
                     'jlpt': ['jlpt', 'jlpt_level', 'level', 'jlptlevel'],
                     'partofspeech': ['partofspeech', 'pos', 'grammar', 'type', 'part_of_speech'],
-                    'common': ['common', 'frequency', 'popular', 'commonness']
+                    'common': ['common', 'frequency', 'popular', 'commonness'],
+                    'audio': ['audio', 'sound', 'pronunciation_audio', 'voice']
                 }
                 
                 field_key = field_name.lower().replace('_', '').replace(' ', '')
@@ -319,7 +399,8 @@ def find_matching_field(field_name, available_fields):
         'meaning': ['meaning', 'definition', 'english', 'translation', 'definitions'],
         'jlpt': ['jlpt', 'jlpt_level', 'level', 'jlptlevel'],
         'partofspeech': ['partofspeech', 'pos', 'grammar', 'type', 'part_of_speech'],
-        'common': ['common', 'frequency', 'popular', 'commonness']
+        'common': ['common', 'frequency', 'popular', 'commonness'],
+        'audio': ['audio', 'sound', 'pronunciation_audio', 'voice']
     }
     
     field_key = field_name.lower().replace('_', '').replace(' ', '')
@@ -330,6 +411,34 @@ def find_matching_field(field_name, available_fields):
                     return fname
     
     return None
+
+
+def load_config():
+    """Load configuration - extracted for reuse"""
+    try:
+        config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Could not load config: {e}")
+    
+    # Default configuration
+    return {
+        "field_mappings": {
+            "Japanese": "kanji",
+            "Reading": "reading",
+            "Meaning": "meanings", 
+            "JLPT": "jlpt",
+            "PartOfSpeech": "pos",
+            "Common": "common",
+            "Audio": "audio"
+        },
+        "keyboard_shortcut": "Ctrl+J",
+        "audio_settings": {
+            "enabled": True
+        }
+    }
 
 
 def fill_field_direct(editor, field_name, value):

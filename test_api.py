@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script for Jisho.org API functionality
+Test script for Jisho.org API functionality with audio support
 Run this script to test the API connection and data parsing
 without needing to install the add-on in Anki first.
 """
@@ -10,13 +10,56 @@ import requests
 from urllib.parse import quote
 from jisho_parser import parse_jisho_result
 
+def test_jisho_audio(word, reading):
+    """Test Jisho.org audio extraction"""
+    print(f"🎵 Testing Jisho.org audio for: {word} ({reading})")
+    
+    try:
+        # Request the Jisho.org search page
+        url = f"https://jisho.org/search/{quote(word)}"
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        html_content = response.text
+        
+        # Look for audio URLs in the HTML
+        import re
+        audio_pattern = r'//d1vjc5dkcd3yh2\.cloudfront\.net/audio/([a-f0-9]{32})\.mp3'
+        matches = re.findall(audio_pattern, html_content)
+        
+        if matches:
+            audio_hash = matches[0]
+            audio_url = f"https://d1vjc5dkcd3yh2.cloudfront.net/audio/{audio_hash}.mp3"
+            print(f"   ✅ Jisho.org: Found audio - {audio_url}")
+            
+            # Test if the audio URL is accessible
+            audio_response = requests.head(audio_url, timeout=5)
+            if audio_response.status_code == 200:
+                print(f"   ✅ Audio file is accessible")
+            else:
+                print(f"   ⚠️  Audio file status: {audio_response.status_code}")
+        else:
+            print(f"   ❌ Jisho.org: No audio found for {word}")
+            
+    except Exception as e:
+        print(f"   ❌ Jisho.org audio test failed: {e}")
+
+def test_audio_sources(word, reading):
+    """Test various audio sources for a Japanese word"""
+    # Test the Jisho.org audio extraction
+    test_jisho_audio(word, reading)
+
 def test_jisho_api():
     """Test the Jisho.org API with sample words"""
     
     test_words = ["猫", "食べる", "美しい", "こんにちは", "arigatou"]
     
-    print("🧪 Testing Jisho.org API Integration")
-    print("=" * 50)
+    print("🧪 Testing Jisho.org API Integration with Audio Support")
+    print("=" * 60)
     
     for word in test_words:
         print(f"\n🔍 Testing word: {word}")
@@ -46,6 +89,10 @@ def test_jisho_api():
             print(f"   JLPT: {parsed.get('jlpt', 'N/A')}")
             print(f"   Parts of Speech: {parsed.get('pos', 'N/A')}")
             print(f"   Common: {parsed.get('common', 'N/A')}")
+            
+            # Test audio sources for this word
+            if parsed.get('kanji') and parsed.get('reading'):
+                test_audio_sources(parsed.get('kanji'), parsed.get('reading'))
             
         except requests.RequestException as e:
             print(f"❌ Network error: {e}")

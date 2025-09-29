@@ -5,7 +5,11 @@
         "Meaning": "meanings",
         "JLPT": "jlpt",
         "PartOfSpeech": "pos",
-        "Common": "common"
+        "Common": "common",
+        "Audio": "audio"
     },
-    "keyboard_shortcut": "Ctrl+J"
+    "keyboard_shortcut": "Ctrl+J",
+    "audio_settings": {
+        "enabled": true
+    }
 }
