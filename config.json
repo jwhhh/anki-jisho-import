@@ -1,0 +1,11 @@
+{
+    "field_mappings": {
+        "Japanese": "kanji",
+        "Reading": "reading", 
+        "Meaning": "meanings",
+        "JLPT": "jlpt",
+        "PartOfSpeech": "pos",
+        "Common": "common"
+    },
+    "keyboard_shortcut": "Ctrl+J"
+}
