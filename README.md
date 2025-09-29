@@ -4,7 +4,7 @@ An Anki add-on that automatically fills Japanese word information using the Jish
 
 ## Demo
 
-![Demo Video](demo.mov)
+![Demo](demo.gif)
 
 *The add-on in action: Type Japanese text → Press Ctrl+J → All fields automatically filled and corrected!*
 
