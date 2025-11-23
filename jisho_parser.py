@@ -53,6 +53,7 @@ def parse_jisho_result(result):
         # 1. def; def
         # 2. def; def
         if meanings_groups:
+            # Join with a single newline between senses (one-line break)
             parsed['meanings'] = '\n'.join(f"{i+1}. {grp}" for i, grp in enumerate(meanings_groups))
         else:
             parsed['meanings'] = ''
