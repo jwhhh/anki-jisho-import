@@ -32,7 +32,30 @@ def parse_jisho_result(result):
             if english_definitions:
                 definitions.extend(english_definitions)
         
-        parsed['meanings'] = '; '.join(definitions[:5])  # Limit to first 5 meanings
+        # Keep all collected definitions and expose both a flat list,
+        # grouped senses list, and a user-friendly numbered string.
+        definitions = []
+        meanings_groups = []
+        for sense in senses:
+            parts_of_speech = sense.get('parts_of_speech', [])
+            if 'Wikipedia definition' in parts_of_speech:
+                continue
+
+            english_definitions = sense.get('english_definitions', [])
+            if english_definitions:
+                definitions.extend(english_definitions)
+                # Join definitions for this sense with '; '
+                meanings_groups.append('; '.join(english_definitions))
+
+        parsed['meanings_list'] = definitions
+        parsed['meanings_grouped'] = meanings_groups
+        # Create a numbered listing (one line per sense) like:
+        # 1. def; def
+        # 2. def; def
+        if meanings_groups:
+            parsed['meanings'] = '\n'.join(f"{i+1}. {grp}" for i, grp in enumerate(meanings_groups))
+        else:
+            parsed['meanings'] = ''
         
         # Get parts of speech (exclude Wikipedia)
         parts_of_speech = []

@@ -56,7 +56,7 @@ def test_audio_sources(word, reading):
 def test_jisho_api():
     """Test the Jisho.org API with sample words"""
     
-    test_words = ["猫", "食べる", "美しい", "こんにちは", "arigatou"]
+    test_words = ["猫", "食べる", "美しい", "こんにちは", "arigatou", "付く"]
     
     print("🧪 Testing Jisho.org API Integration with Audio Support")
     print("=" * 60)
@@ -85,7 +85,14 @@ def test_jisho_api():
             print(f"✅ Found result:")
             print(f"   Kanji: {parsed.get('kanji', 'N/A')}")
             print(f"   Reading: {parsed.get('reading', 'N/A')}")
-            print(f"   Meanings: {parsed.get('meanings', 'N/A')}")
+            # Print the formatted numbered meanings (one sense per line)
+            print("   Meanings:")
+            print(parsed.get('meanings', 'N/A'))
+            # If parser exposes grouped and flat lists, show them for clarity
+            if parsed.get('meanings_grouped') is not None:
+                print(f"   Meanings (grouped list): {parsed.get('meanings_grouped')}")
+            if parsed.get('meanings_list') is not None:
+                print(f"   Meanings (flat list): {parsed.get('meanings_list')}")
             print(f"   JLPT: {parsed.get('jlpt', 'N/A')}")
             print(f"   Parts of Speech: {parsed.get('pos', 'N/A')}")
             print(f"   Common: {parsed.get('common', 'N/A')}")
